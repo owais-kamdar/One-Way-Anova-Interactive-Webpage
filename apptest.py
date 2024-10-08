@@ -73,7 +73,7 @@ if uploaded_file:
                 if st.button("Run One-way ANOVA"):
                     try:
                         myGrid = selected_columns.to_numpy().T  # Transpose to treat columns as groups
-                        result, myF, Fstat = myANOVA(myGrid, alpha)
+                        result, myF, Fstat, p_value = myANOVA(myGrid, alpha)
                         
                         # Calculate the degrees of freedom
                         DFBG = len(myGrid) - 1  # Degrees of freedom between groups
