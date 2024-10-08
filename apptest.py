@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from anova import myANOVA  # Import the updated ANOVA function with p-value
+from anova import myANOVA  # Import the ANOVA function
 from scipy.stats import f
 
 # Setting the page title and layout
@@ -23,6 +23,9 @@ st.sidebar.write("""
 **One-way ANOVA** (Analysis of Variance) is a statistical method used to compare means of three or more samples. 
 It tests the null hypothesis that all groups have the same population mean. The test produces an F-statistic 
 and a corresponding p-value to determine statistical significance.
+
+- **F-statistic**: A ratio of the variance between group means to the variance within the groups.
+- **p-value**: If the p-value is below the chosen significance level (alpha), you reject the null hypothesis, indicating a significant difference between the groups.
 """)
 
 # File upload section
@@ -31,7 +34,7 @@ uploaded_file = st.file_uploader("Upload your CSV file for analysis", type=["csv
 if uploaded_file:
     try:
         # Read the uploaded CSV file and display it
-        data = pd.read_csv(uploaded_file)  # <-- Handling file upload
+        data = pd.read_csv(uploaded_file)
 
         # Check if the first column is non-numeric and may represent labels (group names)
         if not np.issubdtype(data.iloc[:, 0].dtype, np.number):
@@ -70,12 +73,19 @@ if uploaded_file:
                 if st.button("Run One-way ANOVA"):
                     try:
                         myGrid = selected_columns.to_numpy().T  # Transpose to treat columns as groups
-                        result, myF, Fstat, p_value = myANOVA(myGrid, alpha)
+                        result, myF, Fstat = myANOVA(myGrid, alpha)
+                        
+                        # Calculate the degrees of freedom
+                        DFBG = len(myGrid) - 1  # Degrees of freedom between groups
+                        DFWG = myGrid.size - len(myGrid)  # Degrees of freedom within groups
+                        
+                        # Calculate the p-value using the F-distribution survival function
+                        p_value = f.sf(myF, DFBG, DFWG)  # Survival function (1 - CDF)
 
                         # Display results
                         st.write(f"**F-statistic**: {myF}")
                         st.write(f"**Critical F-value**: {Fstat}")
-                        st.write(f"**P-value**: {p_value:.10f}")
+                        st.write(f"**P-value**: {p_value:.8f}")
 
                         # Provide contextual interpretation
                         if p_value < alpha:
