@@ -1,20 +1,19 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from anova import myANOVA  # Import the ANOVA function
+from anova import myANOVA  # Import the updated ANOVA function with p-value
 from scipy.stats import f
 
 # Setting the page title and layout
 st.set_page_config(page_title="One-way ANOVA Dashboard", layout="wide")
 
 # App title
-st.title("📊 One-way ANOVA Test with SQL Integration 📊")
+st.title("📊 One-way ANOVA Test 📊")
 
 st.write("""
 ### Welcome to the One-way ANOVA Dashboard! 
 This interactive app allows you to:
 - Upload a CSV file
-- Store and query the data using an SQLite database
 - Perform One-way ANOVA to determine if there's a significant difference between groups.
 """)
 
@@ -24,9 +23,6 @@ st.sidebar.write("""
 **One-way ANOVA** (Analysis of Variance) is a statistical method used to compare means of three or more samples. 
 It tests the null hypothesis that all groups have the same population mean. The test produces an F-statistic 
 and a corresponding p-value to determine statistical significance.
-
-- **F-statistic**: A ratio of the variance between group means to the variance within the groups.
-- **p-value**: If the p-value is below the chosen significance level (alpha), you reject the null hypothesis, indicating a significant difference between the groups.
 """)
 
 # File upload section
@@ -35,9 +31,7 @@ uploaded_file = st.file_uploader("Upload your CSV file for analysis", type=["csv
 if uploaded_file:
     try:
         # Read the uploaded CSV file and display it
-        data = pd.read_csv(uploaded_file)  # Read the uploaded CSV, no hardcoded path needed
-
-        st.success("✅ File uploaded and data read successfully!")
+        data = pd.read_csv(uploaded_file)  # <-- Handling file upload
 
         # Check if the first column is non-numeric and may represent labels (group names)
         if not np.issubdtype(data.iloc[:, 0].dtype, np.number):
@@ -76,17 +70,18 @@ if uploaded_file:
                 if st.button("Run One-way ANOVA"):
                     try:
                         myGrid = selected_columns.to_numpy().T  # Transpose to treat columns as groups
-                        result, myF, Fstat = myANOVA(myGrid, alpha)
-                        
+                        result, myF, Fstat, p_value = myANOVA(myGrid, alpha)
+
                         # Display results
                         st.write(f"**F-statistic**: {myF}")
                         st.write(f"**Critical F-value**: {Fstat}")
+                        st.write(f"**P-value**: {p_value:.10f}")
 
                         # Provide contextual interpretation
-                        if myF > Fstat:
-                            st.success(f"Result: There is a statistically significant difference between the groups.")
+                        if p_value < alpha:
+                            st.success(f"Result: There is a statistically significant difference between the groups (p-value = {p_value:.5f}).")
                         else:
-                            st.warning(f"Result: There is no evidence for a significant difference between the groups.")
+                            st.warning(f"Result: There is no evidence for a significant difference between the groups (p-value = {p_value:.5f}).")
                     except Exception as e:
                         st.error(f"❌ Error during ANOVA computation: {e}")
 
