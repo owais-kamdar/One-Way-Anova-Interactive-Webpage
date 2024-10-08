@@ -4,48 +4,39 @@ import numpy as np
 from scipy.stats import f
 
 def myANOVA(grid, alpha):
-    # Calculate the grand mean (GM)
     GM = np.mean(grid)
-
-    # Calculate group means
     groupMeans = np.zeros(len(grid))
+    
     for i in range(len(grid)):
         groupMeans[i] = np.mean(grid[i])
         
-    # Initialize sum of squares
     SStotal = 0
     SSWG = 0
     SSBG = 0
 
-    # Calculate sum of squares
     for i in range(len(grid)):
-        SSBG += len(grid[i]) * (groupMeans[i] - GM)**2
+        SSBG += len(grid[i]) * (groupMeans[i] - GM) ** 2
         for j in range(len(grid[i])):
-            SStotal += (grid[i, j] - GM)**2
-            SSWG += (grid[i, j] - groupMeans[i])**2
+            SStotal += (grid[i, j] - GM) ** 2
+            SSWG += (grid[i, j] - groupMeans[i]) ** 2
 
-    # Degrees of freedom
     DFtotal = grid.size - 1
     DFBG = len(grid) - 1
     DFWG = grid.size - len(grid)
 
-    # Variance between groups and within groups
     varBG = SSBG / DFBG
     varWG = SSWG / DFWG
 
-    # Calculate the F-statistic
     myF = varBG / varWG
 
-    # Get the critical F-value using the F-distribution CDF (f.ppf)
+    # Get the critical F-value using the F-distribution
     Fstat = f.ppf(1 - alpha, DFBG, DFWG)
 
-    # Compare F-statistic with the critical F-value to make the decision
     if myF > Fstat:
         result = "There is a statistically significant difference between the groups!"
     else:
         result = "There is no evidence for a significant difference between the groups."
     
-    # Return three values: result, F-statistic, and critical F-value
     return result, myF, Fstat
 
 
