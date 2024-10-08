@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.stats import f
 
-# ANOVA function
 def myANOVA(grid, alpha):
     GM = np.mean(grid)
     groupMeans = np.zeros(len(grid))
@@ -37,10 +36,13 @@ def myANOVA(grid, alpha):
     # Get the critical F-value using the F-distribution
     Fstat = f.ppf(1 - alpha, DFBG, DFWG)
 
+    # Calculate the p-value using the F-distribution survival function (sf)
+    p_value = f.sf(myF, DFBG, DFWG)
+
     # Decision based on F-statistic
     if myF > Fstat:
         result = "There is a statistically significant difference between the groups!"
     else:
         result = "There is no evidence for a significant difference between the groups."
     
-    return result, myF, Fstat
+    return result, myF, Fstat, p_value  # <-- Return p-value
