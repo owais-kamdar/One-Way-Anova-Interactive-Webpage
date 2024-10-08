@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import sqlite3
 from anova import myANOVA  # Import the ANOVA function
 from scipy.stats import f
 
@@ -35,11 +34,10 @@ uploaded_file = st.file_uploader("Upload your CSV file for analysis", type=["csv
 
 if uploaded_file:
     try:
-        conn = sqlite3.connect("anova_test_db.db")  # open the connection to an SQL database named anova_test_db
-        st.success("🔌 Connected to the SQLite Database!")
-
         # Read the uploaded CSV file and display it
-        data = pd.read_csv(uploaded_file)
+        data = pd.read_csv(uploaded_file)  # Read the uploaded CSV, no hardcoded path needed
+
+        st.success("✅ File uploaded and data read successfully!")
 
         # Check if the first column is non-numeric and may represent labels (group names)
         if not np.issubdtype(data.iloc[:, 0].dtype, np.number):
@@ -50,13 +48,6 @@ if uploaded_file:
             data_numeric = data  # If first column is numeric, use all data
         
         st.write("**Uploaded CSV Data:**", data)
-
-        # Save CSV data to SQL table
-        try:
-            data.to_sql('table1', conn, index=False, if_exists='replace')  
-            st.success("✅ Data successfully uploaded to the SQL database!")
-        except Exception as e:
-            st.error(f"❌ Data upload error: {e}")
 
         # Select columns instead of rows for ANOVA
         st.write("#### Select the columns representing your groups for the ANOVA test:")
@@ -87,32 +78,19 @@ if uploaded_file:
                         myGrid = selected_columns.to_numpy().T  # Transpose to treat columns as groups
                         result, myF, Fstat = myANOVA(myGrid, alpha)
                         
-                        # Calculate the degrees of freedom
-                        DFBG = len(myGrid) - 1  # Degrees of freedom between groups
-                        DFWG = myGrid.size - len(myGrid)  # Degrees of freedom within groups
-                        
-                        # Calculate the p-value using the F-distribution survival function
-                        p_value = f.sf(myF, DFBG, DFWG)  # Survival function (1 - CDF)
-
                         # Display results
                         st.write(f"**F-statistic**: {myF}")
                         st.write(f"**Critical F-value**: {Fstat}")
-                        st.write(f"**P-value**: {p_value:.8f}")
 
                         # Provide contextual interpretation
-                        if p_value < alpha:
-                            st.success(f"Result: There is a statistically significant difference between the groups (p-value = {p_value:.5f}).")
+                        if myF > Fstat:
+                            st.success(f"Result: There is a statistically significant difference between the groups.")
                         else:
-                            st.warning(f"Result: There is no evidence for a significant difference between the groups (p-value = {p_value:.5f}).")
+                            st.warning(f"Result: There is no evidence for a significant difference between the groups.")
                     except Exception as e:
                         st.error(f"❌ Error during ANOVA computation: {e}")
 
-    except sqlite3.Error as e:
-        st.error(f"❌ Database connection error: {e}")
-
-    finally:
-        if conn:
-            conn.close()  # close the connection to the SQL database
-            st.success("🔒 Your database connection has been closed.")
+    except Exception as e:
+        st.error(f"❌ Error reading CSV: {e}")
 else:
     st.info("📂 Please upload a CSV file to begin.")
